@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<!--
+🎯 CANTONESE PRONUNCIATION TRAINER - GOOGLE SHEETS INTEGRATION
+Data Source: Google Sheets (Live Data)
+
+📋 CURRENT CONFIGURATION:
+✅ Dynamic sentence loading from Google Sheets
+✅ Real-time content updates when sheet is modified
+✅ Supports unlimited sentences and topics
+✅ Includes Jyutping pronunciation and English translations
+
+🚀 QUICK START:
+1. Open this HTML file in your browser
+2. The app automatically loads sentences from Google Sheets
+3. Internet connection required for initial data loading
+4. Click "New Random Sentence" to practice different sentences
+5. Edit the Google Sheet to add/modify sentences instantly
+
+📊 DATA FORMAT:
+Each row in the Google Sheet should include:
+- � ID: Unique identeifier (Column A)
+- 🈳 Chinese Characters: Traditional Chinese text (Column B)
+- 🔤 Jyutping: Cantonese romanization with tones (Column C)
+- 🌍 Translation: English meaning (Column D)
+- 🏷️ Topic: Category (Family, Travel, Food, etc.) (Column E)
+- 📊 Difficulty: Beginner/Intermediate/Advanced (Column F)
+
+🔧 FEATURES:
+✅ Live data from Google Sheets
+✅ Co-located Jyutping and Chinese characters
+✅ Tone-colored pronunciation guides
+✅ Audio recording and playback
+✅ Pronunciation analysis with detailed feedback
+✅ Sound visualization during recording
+✅ Mobile-responsive design
+✅ URL sharing for specific sentences
+✅ Topic-based emoji illustrations
+✅ Automatic content updates from sheet
+
+🔗 GOOGLE SHEETS SETUP:
+- Sheet must be shared with "Anyone with the link" as Viewer
+- First row should contain headers
+- Data starts from row 2
+- Sheet name: "Sheet1" (or update in code)
+
+🎯 LEARNING FOCUS:
+- Essential daily conversation phrases
+- Proper tone pronunciation (1-6 tones)
+- Common sentence patterns
+- Cultural context through practical examples
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cantonese Pronunciation Practice</title>
+
+<style>
+    body {
+      margin: 0;
+      padding: 8px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      line-height: 1.4;
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    .container {
+      background: white;
+      max-width: 600px;
+      margin: 0 auto;
+      border-radius: 6px;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+      padding: 12px;
+      height: calc(100vh - 16px);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+      text-align: center;
+      color: #2c3e50;
+    }
+    
+    .subtitle {
+      color: #666;
+      font-size: 12px;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    
+    #sentence {
+      font-size: 24px;
+      line-height: 1.2;
+      margin: 8px 0;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      text-align: center;
+      border: 1px solid #e9ecef;
+      flex-shrink: 0;
+    }
+    
+    .syl {
+      display: inline-block;
+      text-align: center;
+      margin: 0 1px;
+      padding: 2px;
+      border-radius: 3px;
+      transition: background-color 0.2s;
+    }
+    
+    .syl:hover {
+      background: #e9ecef;
+    }
+    
+    .jyut {
+      display: block;
+      font-size: 10px;
+      color: #666;
+      font-weight: 500;
+      margin-bottom: 1px;
+    }
+    
+    .char {
+      display: block;
+      font-size: 24px;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+    
+    .illu {
+      display: block;
+      font-size: 12px;
+      margin-top: 1px;
+    }
+    
+    /* Tone colors - unified */
+    .tone-1, .tone-2, .tone-3, .tone-4, .tone-5, .tone-6 { 
+      color: #666; 
+    }
+    
+    .btn-group {
+      margin: 8px 0;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    
+    button {
+      padding: 8px 16px;
+      margin: 0 4px 4px 0;
+      font-size: 14px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+      background: white;
+      color: #333;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    button:hover {
+      background: #f8f9fa;
+      border-color: #adb5bd;
+    }
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    button:disabled:hover {
+      background: white;
+      border-color: #ddd;
+    }
+    
+    #startBtn {
+      background: #28a745;
+      color: white;
+      border-color: #28a745;
+    }
+    
+    #startBtn:hover {
+      background: #218838;
+      border-color: #1e7e34;
+    }
+    
+    #stopBtn {
+      background: #dc3545;
+      color: white;
+      border-color: #dc3545;
+    }
+    
+    #stopBtn:hover {
+      background: #c82333;
+      border-color: #bd2130;
+    }
+    
+    #result {
+      margin-top: 8px;
+      font-size: 16px;
+      line-height: 1.4;
+      flex: 1;
+      overflow-y: auto;
+    }
+    
+    .correct { 
+      color: #28a745;
+      font-weight: 600;
+      background: #d4edda;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    
+    .wrong { 
+      color: #dc3545;
+      font-weight: 600;
+      background: #f8d7da;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: help;
+      text-decoration: underline;
+    }
+    
+    .audio-section, .model-section {
+      margin: 8px 0;
+      padding: 8px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      border: 1px solid #e9ecef;
+      flex-shrink: 0;
+    }
+    
+    .audio-section h3, .model-section h3 {
+      margin: 0 0 6px 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .model-section {
+      display: none;
+    }
+    
+    .sound-bar-container {
+      margin: 8px 0;
+      padding: 8px;
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      border-radius: 4px;
+      display: none;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    
+    .sound-bar-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #856404;
+      margin-bottom: 6px;
+    }
+    
+    .recording-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: #dc3545;
+      border-radius: 50%;
+      margin-right: 8px;
+      animation: pulse 1s infinite;
+    }
+    
+    .sound-bars {
+      display: flex;
+      align-items: end;
+      justify-content: center;
+      height: 25px;
+      gap: 1px;
+      margin: 6px 0;
+    }
+    
+    .sound-bar {
+      width: 3px;
+      background: #28a745;
+      border-radius: 1px;
+      min-height: 2px;
+      transition: height 0.1s;
+    }
+    
+    .volume-level {
+      font-size: 12px;
+      color: #666;
+    }
+    
+    .tooltip {
+      position: absolute;
+      background: #333;
+      color: white;
+      padding: 6px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+      pointer-events: none;
+      z-index: 100;
+      display: none;
+      max-width: 200px;
+    }
+    
+    .tooltip::after {
+      content: '';
+      position: absolute;
+      top: -5px;
+      left: 15px;
+      border: 5px solid transparent;
+      border-bottom-color: #333;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    /* Mobile responsive - optimized for viewport */
+    @media (max-width: 768px) {
+      body {
+        padding: 4px;
+      }
+      
+      .container {
+        padding: 8px;
+        height: calc(100vh - 8px);
+      }
+      
+      h1 {
+        font-size: 18px;
+        margin-bottom: 4px;
+      }
+      
+      #sentence {
+        font-size: 20px;
+        padding: 8px;
+        margin: 4px 0;
+      }
+      
+      .char {
+        font-size: 20px;
+      }
+      
+      .jyut {
+        font-size: 9px;
+      }
+      
+      button {
+        padding: 6px 12px;
+        font-size: 12px;
+        margin: 0 2px 4px 0;
+      }
+      
+      .sound-bars {
+        height: 20px;
+      }
+      
+      .subtitle {
+        font-size: 11px;
+        margin-bottom: 4px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .container {
+        padding: 6px;
+      }
+      
+      h1 {
+        font-size: 16px;
+      }
+      
+      #sentence {
+        font-size: 18px;
+        padding: 6px;
+      }
+      
+      .char {
+        font-size: 18px;
+      }
+      
+      .jyut {
+        font-size: 8px;
+      }
+      
+      button {
+        padding: 6px 10px;
+        font-size: 11px;
+        display: inline-block;
+        margin: 0 2px 3px 0;
+      }
+      
+      .btn-group {
+        margin: 4px 0;
+      }
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Cantonese Pronunciation Practice</h1>
+
+  <div id="sentence"></div>
+  <p id="rationale" class="subtitle"></p>
+
+  <!-- New sentence button -->
+  <div class="btn-group">
+    <button id="newBtn">New Random Sentence</button>
+    <button id="shareBtn">Share This Sentence</button>
+  </div>
+
+  <!-- Record buttons -->
+  <div class="btn-group">
+    <button id="startBtn">Start Recording</button>
+    <button id="stopBtn" disabled>Stop & Check</button>
+  </div>
+
+  <!-- Sound Bar (shown during recording) -->
+  <div id="soundBarContainer" class="sound-bar-container">
+    <div class="sound-bar-title">
+      <div class="recording-indicator"></div>
+      Recording Audio
+    </div>
+    <div class="sound-bars" id="soundBars">
+      <!-- Sound bars will be generated by JavaScript -->
+    </div>
+    <div class="volume-level" id="volumeLevel">Volume: 0%</div>
+  </div>
+
+  <!-- ASR Status -->
+  <div id="asrStatus" class="asr-status" style="display: none;"></div>
+
+  <!-- User audio section -->
+  <div id="userAudioSection" class="audio-section" style="display: none;">
+    <h3>Your Recording:</h3>
+    <div id="userAudioContainer"></div>
+  </div>
+
+  <!-- Model audio section (shown after checking) -->
+  <div id="modelSection" class="model-section">
+    <h3>Model Pronunciation:</h3>
+    <button id="playModel">🔊 Play Model Answer</button>
+    <p style="font-size: 14px; color: #666; margin-top: 10px;">
+      Listen to the correct pronunciation after checking your answer
+    </p>
+  </div>
+
+  <!-- Result will appear here -->
+  <div id="result"></div>
+
+  <!-- Small popup when you hover wrong words -->
+  <div id="tooltip" class="tooltip"></div>
+</div>
+
+<script>
+// Tone colors based on common Cantonese learning materials
+const toneColors = {
+  '1': '#e74c3c', // Red - high level
+  '2': '#3498db', // Blue - high rising  
+  '3': '#f39c12', // Orange - mid level
+  '4': '#27ae60', // Green - low falling
+  '5': '#9b59b6', // Purple - low rising
+  '6': '#795548'  // Brown - low level
+};
+
+// ASR Configuration
+const ASR_CONFIG = {
+  endpoint: 'YOUR_ASR_ENDPOINT_HERE', // Replace with actual ASR endpoint
+  timeout: 30000, // 30 seconds timeout
+  retries: 2
+};
+
+// Jyutping validation and normalization
+class JyutpingProcessor {
+  static normalizeJyutping(jyutping) {
+    if (!jyutping) return '';
+    
+    // Handle malformed Jyutping like "jane4" or "dakaa1"
+    let normalized = jyutping.toLowerCase().trim();
+    
+    // Fix common malformed patterns
+    const fixes = {
+      'jane': 'zin', // Common misrecognition
+      'dakaa': 'dak', // Remove extra vowels
+      'aa': 'a', // Normalize double vowels where inappropriate
+    };
+    
+    // Apply fixes for known malformed patterns
+    for (const [malformed, correct] of Object.entries(fixes)) {
+      if (normalized.includes(malformed)) {
+        normalized = normalized.replace(malformed, correct);
+      }
+    }
+    
+    return normalized;
+  }
+  
+  static isValidJyutping(jyutping) {
+    const normalized = this.normalizeJyutping(jyutping);
+    // Basic validation: should end with tone number 1-6
+    return /[1-6]$/.test(normalized) && normalized.length >= 2;
+  }
+  
+  static parseJyutping(syl) {
+    if (!syl) return {initial: '', final: '', tone: '', display: ''};
+    
+    const normalized = this.normalizeJyutping(syl);
+    const toneMatch = normalized.match(/\d$/);
+    const tone = toneMatch ? toneMatch[0] : '';
+    let withoutTone = normalized.slice(0, -tone.length);
+    
+    // Comprehensive initials list (sorted by length, longest first)
+    const initials = ['ng','gw','kw','b','p','m','f','d','t','n','l','g','k','h','w','z','c','s','j'];
+    let initial = '';
+    
+    for (let init of initials) {
+      if (withoutTone.startsWith(init)) {
+        initial = init;
+        withoutTone = withoutTone.slice(init.length);
+        break;
+      }
+    }
+    
+    const final = withoutTone;
+    const display = `${initial}${final}${tone}`;
+    
+    return {initial, final, tone, display};
+  }
+}
+
+// Helper function to parse sentence into syllables
+function parseSentenceToSyllables(characters, jyutping) {
+  const chars = characters.split('');
+  
+  // Clean jyutping by removing punctuation and splitting properly
+  const cleanJyutping = jyutping ? jyutping.replace(/[?!.,;:]/g, '').trim() : '';
+  const jyuts = cleanJyutping ? cleanJyutping.split(' ').filter(j => j.trim()) : [];
+  
+  const syllables = [];
+  let jyutIndex = 0; // Track position in jyutping array separately
+
+  chars.forEach((char, index) => {
+    // Check if character is punctuation, whitespace, or emoji
+    const isPunctuation = /[，。？！；：""''（）【】《》\s]/.test(char);
+    const isEmoji = /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(char);
+    
+    // Skip whitespace characters
+    if (char.trim() === '') {
+      return;
+    }
+    
+    // For Chinese characters, use the corresponding jyutping
+    // For punctuation and emojis, don't assign jyutping
+    let jyutPronunciation = '';
+    if (!isPunctuation && !isEmoji) {
+      jyutPronunciation = jyuts[jyutIndex] || '';
+      jyutIndex++; // Only increment for actual Chinese characters
+    }
+    
+    syllables.push({
+      char: char,
+      jyut: jyutPronunciation
+    });
+  });
+
+  return syllables;
+}
+
+// Helper function to generate topic-appropriate illustrations
+function generateIllustrations(topic, length) {
+  const topicEmojis = {
+    'Family': ['👨‍👩‍👧‍👦', '👶', '👧', '👦', '👴', '👵', '💕'],
+    'Travel': ['✈️', '🗺️', '🏠', '🚇', '🚌', '🏢', '📍'],
+    'Greetings': ['👋', '😊', '🤝', '💬', '😄', '🙋‍♂️', '🙋‍♀️'],
+    'Food': ['🍽️', '🥢', '🍚', '🥤', '🍜', '🥟', '🍵'],
+    'Shopping': ['🛒', '💰', '🏪', '👕', '👜', '💳', '🛍️'],
+    'School': ['📚', '✏️', '🎓', '📝', '🏫', '👨‍🎓', '📖'],
+    'Other': ['😊', '💭', '🌟', '❤️', '👍', '🎯', '✨']
+  };
+  
+  const emojis = topicEmojis[topic] || topicEmojis['Other'];
+  const illustrations = [];
+  
+  for (let i = 0; i < length; i++) {
+    if (i < emojis.length) {
+      illustrations.push(emojis[i % emojis.length]);
+    } else {
+      illustrations.push('');
+    }
+  }
+  
+  return illustrations;
+}
+
+// Content Management with Google Sheets integration
+class ContentManager {
+  constructor() {
+    this.sentences = [];
+    
+    // ── CHANGE THESE IF NEEDED ────────────────────────────────
+    this.spreadsheetId = '1yIbeid95JiosmFwVUKKy-Mltm6sqlLqNzulxianTtTM';
+    this.sheetName = 'Sheet1';  // or whatever your tab is named (usually Sheet1)
+  }
+
+  async loadSentences() {
+    try {
+      // Public CSV export URL (works when sheet is shared with "Anyone with the link")
+      const url = `https://docs.google.com/spreadsheets/d/${this.spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(this.sheetName)}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch sheet: ${response.status}`);
+      }
+
+      const csvText = await response.text();
+      
+      // Simple CSV parsing (split lines and commas)
+      const rows = csvText.split('\n').map(row => 
+        row.split(',').map(cell => cell.trim().replace(/^"|"$/g, ''))
+      );
+
+      if (rows.length < 2) {
+        throw new Error("No data found in sheet");
+      }
+
+      const headers = rows[0];
+      const dataRows = rows.slice(1);
+
+      this.sentences = dataRows.map(row => {
+        // Map columns based on your sheet order
+        const [id, characters, jyutping, translation, topic, difficulty] = row;
+        
+        // Skip invalid/empty rows
+        if (!characters || !jyutping) return null;
+
+        const syllables = parseSentenceToSyllables(characters, jyutping);
+
+        return {
+          id: id || `auto-${Math.random().toString(36).slice(2,8)}`,
+          syllables,
+          rationale: `${translation} - Practice sentence from ${topic} category. Focus on correct pronunciation and tone patterns.`,
+          illustrations: generateIllustrations(topic, syllables.length),
+          difficulty: (difficulty || 'Beginner').toLowerCase(),
+          category: (topic || 'Other').toLowerCase(),
+          translation,
+          topic
+        };
+      }).filter(Boolean);  // remove null/invalid entries
+
+      console.log('Loaded', this.sentences.length, 'sentences from Google Sheets');
+      
+    } catch (error) {
+      console.error('Error loading Google Sheet:', error);
+      document.getElementById("sentence").innerHTML = '<p style="color: #e74c3c; text-align: center; padding: 20px;">' +
+        'Failed to load sentences from Google Sheets.<br>' +
+        'Please check your internet connection or sheet sharing settings.</p>';
+    }
+  }
+
+  getSentenceById(id) {
+    return this.sentences.find(s => s.id === id);
+  }
+
+  getRandomSentence() {
+    if (this.sentences.length === 0) {
+      return null;
+    }
+    return this.sentences[Math.floor(Math.random() * this.sentences.length)];
+  }
+
+  getSentencesByDifficulty(difficulty) {
+    return this.sentences.filter(s => s.difficulty === difficulty);
+  }
+
+  getSentencesByCategory(category) {
+    return this.sentences.filter(s => s.category === category);
+  }
+
+  getAllCategories() {
+    const categories = [...new Set(this.sentences.map(s => s.category))];
+    return categories.filter(c => c);
+  }
+
+  getAllDifficulties() {
+    const difficulties = [...new Set(this.sentences.map(s => s.difficulty))];
+    return difficulties.filter(d => d);
+  }
+}
+
+class URLManager {
+  static getCurrentSentenceId() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('id');
+  }
+
+  static async shareSentence(sentenceId) {
+    const baseUrl = window.location.origin + window.location.pathname;
+    const shareUrl = `${baseUrl}?id=${sentenceId}`;
+    
+    console.log('Sharing sentence:', sentenceId, 'URL:', shareUrl);
+    
+    // Try native sharing first (mobile devices)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Cantonese Pronunciation Practice',
+          text: 'Try pronouncing this Cantonese sentence!',
+          url: shareUrl
+        });
+        console.log('Shared successfully via native share');
+        return;
+      } catch (error) {
+        console.log('Native share failed or cancelled:', error);
+        // Fall through to clipboard method
+      }
+    }
+    
+    // Fallback to clipboard
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        alert('Link copied to clipboard! Share it with friends:\n' + shareUrl);
+        console.log('Copied to clipboard successfully');
+      } catch (error) {
+        console.error('Clipboard write failed:', error);
+        // Final fallback - show the URL in a prompt
+        this.showShareUrlPrompt(shareUrl);
+      }
+    } else {
+      // Final fallback for older browsers
+      this.showShareUrlPrompt(shareUrl);
+    }
+  }
+  
+  static showShareUrlPrompt(shareUrl) {
+    // Create a temporary input element to select the text
+    const tempInput = document.createElement('input');
+    tempInput.value = shareUrl;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    tempInput.setSelectionRange(0, 99999); // For mobile devices
+    
+    try {
+      // Try the old execCommand method
+      const successful = document.execCommand('copy');
+      if (successful) {
+        alert('Link copied to clipboard! Share it with friends:\n' + shareUrl);
+      } else {
+        throw new Error('execCommand failed');
+      }
+    } catch (error) {
+      // If all else fails, show a prompt with the URL
+      prompt('Copy this link to share the sentence:', shareUrl);
+    } finally {
+      document.body.removeChild(tempInput);
+    }
+  }
+}
+
+// Enhanced Jyutping styling with tone marks and component highlighting
+function styleJyutping(jyut, highlightComponent = null) {
+  const parsed = JyutpingProcessor.parseJyutping(jyut);
+  const toneColor = toneColors[parsed.tone] || '#000';
+  
+  let initialHtml = parsed.initial;
+  let finalHtml = parsed.final;
+  let toneHtml = parsed.tone;
+  
+  // Highlight specific components if requested
+  if (highlightComponent === 'initial') {
+    initialHtml = `<span class="component-highlight">${parsed.initial}</span>`;
+  } else if (highlightComponent === 'final') {
+    finalHtml = `<span class="component-highlight">${parsed.final}</span>`;
+  } else if (highlightComponent === 'tone') {
+    toneHtml = `<span class="component-highlight">${parsed.tone}</span>`;
+  }
+  
+  return `<span class="tone-${parsed.tone}">${initialHtml}${finalHtml}<sup style="color: ${toneColor}; font-weight: bold;">${toneHtml}</sup></span>`;
+}
+
+// Initialize app with async loading
+const contentManager = new ContentManager();
+
+async function initApp() {
+  // Show loading message
+  document.getElementById("sentence").innerHTML = '<p style="text-align:center; color:#666; padding:20px;">Loading sentences from Google Sheets...</p>';
+  
+  await contentManager.loadSentences();
+  
+  if (contentManager.sentences.length === 0) {
+    document.getElementById("sentence").innerHTML += '<p style="color:#e74c3c;">No sentences were loaded. Please check the sheet.</p>';
+    return;
+  }
+  
+  pickSentence();
+}
+
+// Start the app
+initApp();
+let currentSentence;
+let recorder, audioChunks;
+let audioContext, analyser, microphone, dataArray;
+let soundBarAnimation;
+
+// Enhanced sentence picker with URL support
+function pickSentence() {
+  const id = URLManager.getCurrentSentenceId();
+  if (id) {
+    currentSentence = contentManager.getSentenceById(id);
+  }
+  if (!currentSentence) {
+    currentSentence = contentManager.getRandomSentence();
+  }
+  
+  if (!currentSentence) {
+    // Show error if no sentences available
+    document.getElementById("sentence").innerHTML = '<p style="color: #e74c3c;">No sentences available. Please check your Google Sheets configuration.</p>';
+    document.getElementById("rationale").innerHTML = '';
+    return;
+  }
+  
+  renderSentence();
+  clearResults();
+}
+
+function clearResults() {
+  document.getElementById("result").innerHTML = "";
+  document.getElementById("userAudioSection").style.display = 'none';
+  document.getElementById("modelSection").style.display = 'none';
+}
+
+// Enhanced sentence rendering with improved co-location and styling
+function renderSentence() {
+  let html = '';
+  currentSentence.syllables.forEach((syl, index) => {
+    if (syl.jyut) {
+      html += `<span class="syl" data-jyut="${syl.jyut}" data-char="${syl.char}">
+        <span class="jyut">${styleJyutping(syl.jyut)}</span>
+        <span class="char">${syl.char}</span>`;
+      if (currentSentence.illustrations && currentSentence.illustrations[index]) {
+        html += `<span class="illu">${currentSentence.illustrations[index]}</span>`;
+      }
+      html += `</span>`;
+    } else {
+      html += `<span class="char punctuation">${syl.char}</span>`;
+    }
+  });
+  document.getElementById("sentence").innerHTML = html;
+  document.getElementById("rationale").innerHTML = `<strong>Why this sentence?</strong> ${currentSentence.rationale}`;
+}
+
+// Event listeners
+document.getElementById("newBtn").onclick = () => {
+  currentSentence = null; // allow random selection
+  pickSentence();
+};
+
+document.getElementById("shareBtn").onclick = async () => {
+  try {
+    if (!currentSentence || !currentSentence.id) {
+      alert('No sentence selected to share. Please select a sentence first.');
+      return;
+    }
+    
+    console.log('Share button clicked, current sentence:', currentSentence.id);
+    await URLManager.shareSentence(currentSentence.id);
+  } catch (error) {
+    console.error('Error sharing sentence:', error);
+    alert('Sorry, sharing failed. Please try again.');
+  }
+};
+
+
+
+// Enhanced voice detection for Cantonese
+let cantoVoice = null;
+function findCantoVoice() {
+  const voices = speechSynthesis.getVoices();
+  cantoVoice = voices.find(v => 
+    v.lang === 'yue-Hant-HK' || 
+    v.lang === 'zh-HK' || 
+    v.lang === 'zh-CN' ||
+    v.name.toLowerCase().includes('cantonese') ||
+    v.name.toLowerCase().includes('chinese')
+  );
+  return cantoVoice;
+}
+
+speechSynthesis.onvoiceschanged = findCantoVoice;
+findCantoVoice(); // Initial check
+
+// Sound Bar Functions
+function createSoundBars() {
+  const soundBarsContainer = document.getElementById('soundBars');
+  soundBarsContainer.innerHTML = '';
+  
+  // Create 20 sound bars
+  for (let i = 0; i < 20; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'sound-bar';
+    bar.style.height = '4px';
+    soundBarsContainer.appendChild(bar);
+  }
+}
+
+function startSoundBarAnimation(stream) {
+  try {
+    // Create audio context for analyzing audio
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioContext.createAnalyser();
+    microphone = audioContext.createMediaStreamSource(stream);
+    
+    analyser.fftSize = 256;
+    const bufferLength = analyser.frequencyBinCount;
+    dataArray = new Uint8Array(bufferLength);
+    
+    microphone.connect(analyser);
+    
+    // Show sound bar container
+    document.getElementById('soundBarContainer').style.display = 'block';
+    createSoundBars();
+    
+    // Start animation loop
+    animateSoundBars();
+  } catch (error) {
+    console.error('Error starting sound bar animation:', error);
+    // Hide sound bar container if there's an error
+    document.getElementById('soundBarContainer').style.display = 'none';
+  }
+}
+
+function animateSoundBars() {
+  soundBarAnimation = requestAnimationFrame(animateSoundBars);
+  
+  analyser.getByteFrequencyData(dataArray);
+  
+  const bars = document.querySelectorAll('.sound-bar');
+  const volumeLevel = document.getElementById('volumeLevel');
+  
+  // Calculate average volume
+  let sum = 0;
+  for (let i = 0; i < dataArray.length; i++) {
+    sum += dataArray[i];
+  }
+  const average = sum / dataArray.length;
+  const volumePercent = Math.round((average / 255) * 100);
+  
+  // Update volume display
+  volumeLevel.textContent = `Volume: ${volumePercent}%`;
+  
+  // Update sound bars
+  bars.forEach((bar, index) => {
+    const dataIndex = Math.floor((index / bars.length) * dataArray.length);
+    const height = Math.max(2, (dataArray[dataIndex] / 255) * 35);
+    bar.style.height = height + 'px';
+    
+    // Add color variation based on intensity
+    if (height > 25) {
+      bar.style.background = 'linear-gradient(to top, #ff4757, #ff6b9a)';
+    } else if (height > 12) {
+      bar.style.background = 'linear-gradient(to top, #ff6b9a, #ff8a80)';
+    } else {
+      bar.style.background = 'linear-gradient(to top, #ffa8a8, #ffb3b3)';
+    }
+  });
+}
+
+function stopSoundBarAnimation() {
+  if (soundBarAnimation) {
+    cancelAnimationFrame(soundBarAnimation);
+  }
+  
+  if (audioContext) {
+    audioContext.close();
+  }
+  
+  // Hide sound bar container
+  document.getElementById('soundBarContainer').style.display = 'none';
+}
+
+// Enhanced recording with sound bar visualization
+document.getElementById("startBtn").onclick = async () => {
+  // Check if browser supports required APIs
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    alert('Your browser does not support audio recording. Please use a modern browser like Chrome, Firefox, or Safari.');
+    return;
+  }
+  
+  if (!window.MediaRecorder) {
+    alert('Your browser does not support MediaRecorder API. Please use a modern browser.');
+    return;
+  }
+  
+  // Check if running in secure context (HTTPS or localhost)
+  if (!window.isSecureContext) {
+    alert('Microphone access requires HTTPS or localhost. Please access this page via HTTPS or run it on localhost.');
+    return;
+  }
+  
+  try {
+    audioChunks = [];
+    
+    // Simplified audio request for better compatibility
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+      audio: true
+    });
+    
+    // Start sound bar animation
+    startSoundBarAnimation(stream);
+    
+    // Use the most compatible format
+    let options = {};
+    if (MediaRecorder.isTypeSupported('audio/webm')) {
+      options = { mimeType: 'audio/webm' };
+    } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+      options = { mimeType: 'audio/mp4' };
+    } else if (MediaRecorder.isTypeSupported('audio/wav')) {
+      options = { mimeType: 'audio/wav' };
+    }
+    
+    recorder = new MediaRecorder(stream, options);
+    
+    recorder.ondataavailable = e => {
+      if (e.data.size > 0) {
+        audioChunks.push(e.data);
+      }
+    };
+    
+    recorder.onstop = handleRecordingStop;
+    
+    recorder.onerror = (event) => {
+      console.error('MediaRecorder error:', event.error);
+      alert('Recording error: ' + event.error);
+      stopSoundBarAnimation();
+      resetRecordingButtons();
+    };
+    
+    recorder.start();
+
+    document.getElementById("startBtn").disabled = true;
+    document.getElementById("stopBtn").disabled = false;
+    document.getElementById("startBtn").textContent = "Recording...";
+    
+    // Clear previous results
+    clearResults();
+    
+  } catch (error) {
+    console.error('Error starting recording:', error);
+    stopSoundBarAnimation();
+    resetRecordingButtons();
+    
+    let errorMessage = 'Could not access microphone. ';
+    if (error.name === 'NotAllowedError') {
+      errorMessage += 'Please allow microphone access in your browser and try again.';
+    } else if (error.name === 'NotFoundError') {
+      errorMessage += 'No microphone found. Please check your microphone connection.';
+    } else if (error.name === 'NotSupportedError') {
+      errorMessage += 'Your browser does not support audio recording.';
+    } else {
+      errorMessage += 'Please check your microphone settings and try again.';
+    }
+    alert(errorMessage);
+  }
+};
+
+document.getElementById("stopBtn").onclick = () => {
+  if (recorder && recorder.state === 'recording') {
+    recorder.stop();
+    
+    // Stop all tracks to release microphone
+    if (recorder.stream) {
+      recorder.stream.getTracks().forEach(track => track.stop());
+    }
+  }
+  
+  // Stop sound bar animation
+  stopSoundBarAnimation();
+  
+  resetRecordingButtons();
+};
+
+// Helper function to reset recording button states
+function resetRecordingButtons() {
+  document.getElementById("startBtn").disabled = false;
+  document.getElementById("stopBtn").disabled = true;
+  document.getElementById("startBtn").textContent = "Start Recording";
+}
+
+// Enhanced recording stop handler with better audio compatibility
+async function handleRecordingStop() {
+  // Try multiple audio formats for better browser compatibility
+  let audioBlob;
+  let mimeType = 'audio/webm';
+  
+  // Check supported formats and use the best one
+  if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+    audioBlob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' });
+    mimeType = 'audio/webm;codecs=opus';
+  } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+    audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+    mimeType = 'audio/webm';
+  } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+    audioBlob = new Blob(audioChunks, { type: 'audio/mp4' });
+    mimeType = 'audio/mp4';
+  } else {
+    audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+    mimeType = 'audio/wav';
+  }
+  
+  // Display user audio with better compatibility
+  const userAudio = document.createElement('audio');
+  userAudio.controls = true;
+  userAudio.preload = 'auto';
+  
+  // Create object URL and set source
+  const audioURL = URL.createObjectURL(audioBlob);
+  userAudio.src = audioURL;
+  
+  // Add error handling for audio playback
+  userAudio.onerror = function(e) {
+    console.error('Audio playback error:', e);
+    const errorMsg = document.createElement('p');
+    errorMsg.textContent = 'Audio playback not supported in this browser. Recording was successful.';
+    errorMsg.style.color = '#856404';
+    errorMsg.style.fontSize = '14px';
+    container.appendChild(errorMsg);
+  };
+  
+  // Add load event to ensure audio is ready
+  userAudio.onloadeddata = function() {
+    console.log('Audio loaded successfully, duration:', userAudio.duration);
+  };
+  
+  const userSection = document.getElementById("userAudioSection");
+  const container = document.getElementById("userAudioContainer");
+  container.innerHTML = '';
+  container.appendChild(userAudio);
+  
+  // Add download link as backup
+  const downloadLink = document.createElement('a');
+  downloadLink.href = audioURL;
+  downloadLink.download = `recording_${Date.now()}.${mimeType.split('/')[1]}`;
+  downloadLink.textContent = '📥 Download Recording';
+  downloadLink.style.display = 'block';
+  downloadLink.style.marginTop = '10px';
+  downloadLink.style.fontSize = '14px';
+  downloadLink.style.color = '#74b9ff';
+  downloadLink.style.textDecoration = 'none';
+  container.appendChild(downloadLink);
+  
+  userSection.style.display = 'block';
+  
+  // Demo mode - simulate ASR results
+  checkPronunciationDemo();
+  
+  // Show model section after checking
+  document.getElementById("modelSection").style.display = 'block';
+}
+
+// Enhanced model pronunciation
+document.getElementById('playModel').onclick = () => {
+  const expectedText = currentSentence.syllables
+    .filter(s => s.char && s.char !== '，' && s.char !== '。' && s.char !== '？')
+    .map(s => s.char)
+    .join('');
+    
+  if (cantoVoice || findCantoVoice()) {
+    const utt = new SpeechSynthesisUtterance(expectedText);
+    if (cantoVoice) {
+      utt.voice = cantoVoice;
+    }
+    utt.rate = 0.8; // Slower for learning
+    utt.pitch = 1.0;
+    speechSynthesis.speak(utt);
+  } else {
+    alert('No suitable Chinese voice found in your browser. The model pronunciation feature requires a Chinese TTS voice.');
+  }
+};
+
+// Demo mode pronunciation checker (when ASR is not available)
+function checkPronunciationDemo() {
+  let resultHTML = `<div style="margin-top: 8px;">`;
+  resultHTML += `<p style="color: #856404; background: rgba(255, 193, 7, 0.1); padding: 6px; border-radius: 4px; font-size: 12px;">
+    <strong>Demo Mode:</strong> ASR service not configured. Showing simulated results.
+  </p>`;
+  
+  resultHTML += `<p style="font-size: 14px; margin: 6px 0;"><strong>Pronunciation Analysis:</strong></p>`;
+  resultHTML += `<p style="font-size: 12px; color: #666; margin-bottom: 8px;">
+    <em>Hover over or tap the red highlighted characters to see specific feedback</em>
+  </p>`;
+  resultHTML += `<div style="line-height: 1.6;">`;
+  
+  const allErrors = [];
+  
+  currentSentence.syllables.forEach((syl, index) => {
+    if (!syl.jyut) {
+      resultHTML += `<span class="char punctuation">${syl.char}</span>`;
+      return;
+    }
+    
+    // Simulate pronunciation analysis
+    const isCorrect = Math.random() > 0.3; // 70% correct for demo
+    
+    if (isCorrect) {
+      resultHTML += `<span class="correct syl">
+        <span class="jyut">${styleJyutping(syl.jyut)}</span>
+        <span class="char">${syl.char}</span>
+      </span> `;
+    } else {
+      // Generate specific error feedback
+      const parsed = JyutpingProcessor.parseJyutping(syl.jyut);
+      const errorTypes = ['tone', 'initial', 'final'];
+      const errorType = errorTypes[Math.floor(Math.random() * errorTypes.length)];
+      
+      let errorMessage = '';
+      let highlightComponent = null;
+      
+      if (errorType === 'tone') {
+        const wrongTone = String((parseInt(parsed.tone) % 6) + 1);
+        errorMessage = `Tone error: You said tone ${wrongTone}, but it should be tone ${parsed.tone}. ${getToneDescription(parsed.tone)}`;
+        allErrors.push(`${syl.char} (${syl.jyut}): ${errorMessage}`);
+        highlightComponent = 'tone';
+      } else if (errorType === 'initial') {
+        errorMessage = `Initial sound error: The starting sound should be "${parsed.initial}". Try positioning your tongue/lips correctly.`;
+        allErrors.push(`${syl.char} (${syl.jyut}): ${errorMessage}`);
+        highlightComponent = 'initial';
+      } else {
+        errorMessage = `Final sound error: The ending sound should be "${parsed.final}". Pay attention to the vowel and ending consonant.`;
+        allErrors.push(`${syl.char} (${syl.jyut}): ${errorMessage}`);
+        highlightComponent = 'final';
+      }
+      
+      const safeErrorMessage = errorMessage.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+      resultHTML += `<span class="wrong syl" 
+        data-tooltip="${safeErrorMessage}"
+        style="cursor: help; position: relative;">
+          <span class="jyut">${styleJyutping(syl.jyut, highlightComponent)}</span>
+          <span class="char">${syl.char}</span>
+        </span> `;
+    }
+  });
+  
+  resultHTML += `</div>`;
+  
+  // Add error summary if there are errors
+  if (allErrors.length > 0) {
+    resultHTML += `<div style="margin-top: 8px; padding: 8px; background: rgba(214, 48, 49, 0.05); border-radius: 6px; border-left: 3px solid #d63031;">
+      <h4 style="margin: 0 0 6px 0; color: #d63031; font-size: 14px;">📝 Error Summary (Demo Mode):</h4>
+      <ul style="margin: 0; padding-left: 16px; color: #721c24; font-size: 12px;">`;
+    allErrors.forEach(error => {
+      resultHTML += `<li style="margin-bottom: 4px;">${error}</li>`;
+    });
+    resultHTML += `</ul></div>`;
+  } else {
+    resultHTML += `<div style="margin-top: 8px; padding: 8px; background: rgba(0, 184, 148, 0.05); border-radius: 6px; border-left: 3px solid #00b894;">
+      <h4 style="margin: 0; color: #00b894; font-size: 14px;">🎉 Perfect pronunciation! Well done!</h4>
+    </div>`;
+  }
+  
+  resultHTML += `</div>`;
+  document.getElementById("result").innerHTML = resultHTML;
+  
+  // Re-attach event listeners after dynamic content is inserted
+  attachTooltipListeners();
+}
+
+// Helper function for tone descriptions
+function getToneDescription(tone) {
+  const descriptions = {
+    '1': 'High level tone - keep pitch high and steady',
+    '2': 'High rising tone - start mid and rise up', 
+    '3': 'Mid level tone - keep pitch in middle range',
+    '4': 'Low falling tone - start low and fall further',
+    '5': 'Low rising tone - start low and rise up',
+    '6': 'Low level tone - keep pitch low and steady'
+  };
+  return descriptions[tone] || '';
+}
+
+// Enhanced tooltip functions with better positioning and mobile support
+function showTooltip(event, text) {
+  const tip = document.getElementById("tooltip");
+  tip.innerHTML = text;
+  tip.style.display = "block";
+  
+  // Get viewport dimensions
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  
+  // Get tooltip dimensions (approximate)
+  tip.style.left = '0px';
+  tip.style.top = '0px';
+  const tipRect = tip.getBoundingClientRect();
+  
+  // Calculate position based on event type
+  let left, top;
+  if (event.touches && event.touches[0]) {
+    // Touch event
+    left = event.touches[0].pageX + 10;
+    top = event.touches[0].pageY + 10;
+  } else {
+    // Mouse event
+    left = event.pageX + 10;
+    top = event.pageY + 10;
+  }
+  
+  // Adjust if tooltip would go off screen
+  if (left + tipRect.width > viewportWidth) {
+    left = (event.touches ? event.touches[0].pageX : event.pageX) - tipRect.width - 10;
+  }
+  
+  if (top + tipRect.height > viewportHeight) {
+    top = (event.touches ? event.touches[0].pageY : event.pageY) - tipRect.height - 10;
+  }
+  
+  // Ensure tooltip stays within viewport
+  left = Math.max(5, Math.min(left, viewportWidth - tipRect.width - 5));
+  top = Math.max(5, Math.min(top, viewportHeight - tipRect.height - 5));
+  
+  tip.style.left = left + "px";
+  tip.style.top = top + "px";
+}
+
+function hideTooltip() {
+  document.getElementById("tooltip").style.display = "none";
+}
+
+// Function to attach tooltip listeners to dynamically created elements
+function attachTooltipListeners() {
+  const wrongElements = document.querySelectorAll('.wrong.syl[data-tooltip]');
+  
+  wrongElements.forEach(element => {
+    const tooltip = element.getAttribute('data-tooltip');
+    
+    // Remove existing listeners to prevent duplicates
+    element.removeEventListener('mouseenter', element._mouseEnterHandler);
+    element.removeEventListener('mouseleave', element._mouseLeaveHandler);
+    element.removeEventListener('touchstart', element._touchStartHandler);
+    element.removeEventListener('touchend', element._touchEndHandler);
+    element.removeEventListener('click', element._clickHandler);
+    
+    // Create new handlers
+    element._mouseEnterHandler = (e) => showTooltip(e, tooltip);
+    element._mouseLeaveHandler = () => hideTooltip();
+    element._touchStartHandler = (e) => {
+      e.preventDefault();
+      showTooltip(e, tooltip);
+    };
+    element._touchEndHandler = () => {
+      setTimeout(hideTooltip, 3000); // Auto-hide after 3 seconds on mobile
+    };
+    element._clickHandler = (e) => {
+      e.preventDefault();
+      showTooltip(e, tooltip);
+      setTimeout(hideTooltip, 4000); // Auto-hide after 4 seconds on click
+    };
+    
+    // Attach new listeners
+    element.addEventListener('mouseenter', element._mouseEnterHandler);
+    element.addEventListener('mouseleave', element._mouseLeaveHandler);
+    element.addEventListener('touchstart', element._touchStartHandler);
+    element.addEventListener('touchend', element._touchEndHandler);
+    element.addEventListener('click', element._clickHandler);
+  });
+  
+  console.log(`Attached tooltip listeners to ${wrongElements.length} elements`);
+}
+
+// Add touch support for mobile devices
+document.addEventListener('touchstart', function(e) {
+  const target = e.target.closest('.wrong.syl');
+  if (target && target.dataset.tooltip) {
+    e.preventDefault();
+    showTooltip(e.touches[0], target.dataset.tooltip);
+  } else {
+    hideTooltip();
+  }
+});
+
+// Hide tooltip when scrolling
+document.addEventListener('scroll', hideTooltip);
+document.addEventListener('resize', hideTooltip);
+</script>
+
+</body>
+</html>
